@@ -1136,37 +1136,11 @@ void __wait_drain_rq(struct cpumask *cpus)
 		sched_cpu_drain_rq_wait(cpu);
 }
 
-/* if rt task, set to cfs and return previous prio */
-static int pause_reduce_prio(void)
-{
-	int prev_prio = -1;
-
-	if (current->prio < MAX_RT_PRIO) {
-		struct sched_param param = { .sched_priority = 0 };
-
-		prev_prio = current->prio;
-		sched_setscheduler_nocheck(current, SCHED_NORMAL, &param);
-	}
-
-	return prev_prio;
-}
-
-/* if previous prio was set, restore */
-static void pause_restore_prio(int prev_prio)
-{
-	if (prev_prio >= 0 && prev_prio < MAX_RT_PRIO) {
-		struct sched_param param = { .sched_priority = MAX_RT_PRIO-1-prev_prio };
-
-		sched_setscheduler_nocheck(current, SCHED_FIFO, &param);
-	}
-}
-
 int pause_cpus(struct cpumask *cpus)
 {
 	int err = 0;
 	int cpu;
 	u64 start_time = 0;
-	int prev_prio;
 
 	start_time = sched_clock();
 
@@ -1221,8 +1195,6 @@ int pause_cpus(struct cpumask *cpus)
 		goto err_cpu_maps_update;
 	}
 
-	prev_prio = pause_reduce_prio();
-
 	/*
 	 * Slow path deactivation:
 	 *
@@ -1266,7 +1238,6 @@ int pause_cpus(struct cpumask *cpus)
 
 err_cpus_write_unlock:
 	cpus_write_unlock();
-	pause_restore_prio(prev_prio);
 err_cpu_maps_update:
 	cpu_maps_update_done();
 
@@ -1281,7 +1252,6 @@ int resume_cpus(struct cpumask *cpus)
 	unsigned int cpu;
 	int err = 0;
 	u64 start_time = 0;
-	int prev_prio;
 
 	start_time = sched_clock();
 
@@ -1312,13 +1282,11 @@ int resume_cpus(struct cpumask *cpus)
 	if (err)
 		goto err_cpu_maps_update;
 
-	prev_prio = pause_reduce_prio();
-
 	/* Lazy Resume.  Build domains immediately instead of scheduling
 	 * a workqueue.  This is so that the cpu can pull load when
 	 * sent a load balancing kick.
 	 */
-	cpuset_hotplug_workfn(NULL);
+	cpuset_update_active_cpus_affine(cpumask_first(cpus));
 
 	cpus_write_lock();
 
@@ -1341,7 +1309,6 @@ int resume_cpus(struct cpumask *cpus)
 
 err_cpus_write_unlock:
 	cpus_write_unlock();
-	pause_restore_prio(prev_prio);
 err_cpu_maps_update:
 	cpu_maps_update_done();
 

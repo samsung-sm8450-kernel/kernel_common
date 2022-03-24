@@ -97,6 +97,7 @@
 #include <linux/rodata_test.h>
 #include <linux/jump_label.h>
 #include <linux/mem_encrypt.h>
+#include <linux/memblock.h>
 #include <linux/kcsan.h>
 #include <linux/init_syscalls.h>
 #include <linux/stackdepot.h>
@@ -107,10 +108,25 @@
 #include <asm/sections.h>
 #include <asm/cacheflush.h>
 
+#ifdef CONFIG_RKP
+#include <linux/rkp.h>
+#endif
+
+#ifdef CONFIG_KDP
+#include <linux/kdp.h>
+#endif
+
 #define CREATE_TRACE_POINTS
 #include <trace/events/initcall.h>
 
+#if defined(CONFIG_SEC_KUNIT) && defined(CONFIG_UML)
 #include <kunit/test.h>
+#endif
+
+#ifdef CONFIG_SECURITY_DEFEX
+#include <linux/defex.h>
+void __init __weak defex_load_rules(void) { }
+#endif
 
 static int kernel_init(void *);
 
@@ -181,6 +197,10 @@ EXPORT_SYMBOL_GPL(static_key_initialized);
 unsigned int reset_devices;
 EXPORT_SYMBOL(reset_devices);
 
+#if 0 //def CONFIG_KDP_NS
+int __is_kdp_recovery __kdp_ro = 0;
+#endif
+
 static int __init set_reset_devices(char *str)
 {
 	reset_devices = 1;
@@ -215,8 +235,15 @@ static bool __init obsolete_checksetup(char *line)
 				pr_warn("Parameter %s is obsolete, ignored\n",
 					p->str);
 				return true;
-			} else if (p->setup_func(line + n))
-				return true;
+			} else {
+				int ret;
+
+				memblock_memsize_set_name(p->str);
+				ret = p->setup_func(line + n);
+				memblock_memsize_unset_name();
+				if (ret)
+					return true;
+			}
 		}
 		p++;
 	} while (p < __setup_end);
@@ -724,11 +751,20 @@ static int __init do_early_param(char *param, char *val,
 		    (strcmp(param, "console") == 0 &&
 		     strcmp(p->str, "earlycon") == 0)
 		) {
+			memblock_memsize_set_name(p->str);
 			if (p->setup_func(val) != 0)
 				pr_warn("Malformed early option '%s'\n", param);
+			memblock_memsize_unset_name();
 		}
 	}
 	/* We accept everything at this stage. */
+#if 0 //def CONFIG_KDP_NS
+	if ((strncmp(param, "bootmode", 9) == 0)) {
+		if ((strncmp(val, "2", 2) == 0))
+			__is_kdp_recovery = 1;
+	}
+#endif
+
 	return 0;
 }
 
@@ -896,12 +932,19 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 	sort_main_extable();
 	trap_init();
 	mm_init();
+#ifdef CONFIG_RKP
+	rkp_init();
+#endif
 
 	ftrace_init();
 
 	/* trace_printk can be enabled here */
 	early_trace_init();
 
+#ifdef CONFIG_KDP
+	// move to after, early_trace_init. cuz security_integrity_current failed
+	kdp_enable = true;
+#endif
 	/*
 	 * Set up the scheduler prior starting any interrupts (such as the
 	 * timer interrupt). Full topology setup happens at smp_init()
@@ -1025,6 +1068,10 @@ asmlinkage __visible void __init __no_sanitize_address start_kernel(void)
 		efi_enter_virtual_mode();
 #endif
 	thread_stack_cache_init();
+#ifdef CONFIG_KDP
+	if (kdp_enable)
+		kdp_init();
+#endif
 	cred_init();
 	fork_init();
 	proc_caches_init();
@@ -1431,8 +1478,12 @@ static int __ref kernel_init(void *unused)
 
 	if (ramdisk_execute_command) {
 		ret = run_init_process(ramdisk_execute_command);
-		if (!ret)
+		if (!ret) {
+#ifdef CONFIG_RKP
+			rkp_deferred_init();
+#endif
 			return 0;
+		}
 		pr_err("Failed to execute %s (error %d)\n",
 		       ramdisk_execute_command, ret);
 	}
@@ -1522,7 +1573,9 @@ static noinline void __init kernel_init_freeable(void)
 
 	do_basic_setup();
 
-	kunit_run_all_tests();
+#if defined(CONFIG_SEC_KUNIT) && defined(CONFIG_UML)
+	test_executor_init();
+#endif
 
 	console_on_rootfs();
 
@@ -1545,4 +1598,7 @@ static noinline void __init kernel_init_freeable(void)
 	 */
 
 	integrity_load_keys();
+#ifdef CONFIG_SECURITY_DEFEX
+	defex_load_rules();
+#endif
 }

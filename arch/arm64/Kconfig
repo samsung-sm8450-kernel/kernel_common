@@ -669,6 +669,22 @@ config ARM64_ERRATUM_1508412
 
 	  If unsure, say Y.
 
+config ARM64_ERRATUM_1974925
+	bool "Kryo 7XX: 1974925: Incorrect read value for Performance Monitors Common Event Identification Register"
+	default y
+	depends on HW_PERF_EVENTS
+	help
+	  This option adds a workaround for QCOM Kryo erratum 1974925.
+
+	  Affected cores return an incorrect value of the AArch64 System
+	  Register Performance Monitors Common Event Identification Register 0
+	  (PMCEID0_EL0) in which bits corresponding to those events that are
+	  fully implemented are not set, which is incorrect.
+
+	  Work around this issue by manually setting those bits to true.
+
+	  If unsure, say Y.
+
 config CAVIUM_ERRATUM_22375
 	bool "Cavium erratum 22375, 24313"
 	default y
@@ -1186,7 +1202,7 @@ config FORCE_MAX_ZONEORDER
 
 config UNMAP_KERNEL_AT_EL0
 	bool "Unmap kernel when running in userspace (aka \"KAISER\")" if EXPERT
-	default y
+	default n
 	help
 	  Speculation attacks against some high-performance processors can
 	  be used to bypass MMU permission checks and leak kernel data to
@@ -1944,6 +1960,90 @@ config ARCH_ENABLE_HUGEPAGE_MIGRATION
 config ARCH_ENABLE_THP_MIGRATION
 	def_bool y
 	depends on TRANSPARENT_HUGEPAGE
+
+menu "Hypervisor"
+config UH
+	bool "Enable micro hypervisor feature"
+	depends on !SEC_FACTORY
+	default y
+	help
+	  It enables a micro hypervisor.
+	  It's samsung's hypervisor.
+	  RKP and etc can be loaded on it.
+	  please check a memory map for it.
+
+config RKP
+	bool "Enable RKP(Realtime Kernel Protection) feature"
+	depends on UH
+	default y
+	help
+	  This solution provides the kernel protection
+	  using a security monitor located within an isolated execution environment.
+	  This isolated execution environment is either the Secure World of ARM TrustZone
+	  or a thin hypervisor that is protected by the hardware virtualization extensions.
+
+config RKP_FIMC_CHECK
+    bool "Enable fimc signing verification"
+    depends on RKP
+    default n
+    help
+      it verifies fimc signing.
+
+config KDP
+	bool "Enable KDP(Kernel Data Protection) feature"
+	depends on !SEC_VTS_TEST
+	depends on UH
+	default y
+	help
+	  Prevents unauthorized cred modification,
+	  namespace modification, mapping for page table.
+
+config KDP_CRED
+	bool "Enable KDP(Kernel Data Protection) cred feature"
+	depends on !SEC_VTS_TEST
+	depends on UH
+	depends on KDP
+	default y
+	help
+	  Prevents unauthorized cred modification,
+	  namespace modification, mapping for page table.
+
+config KDP_NS
+	bool "Enable KDP(Kernel Data Protection) namespace feature"
+	depends on !SEC_VTS_TEST
+	depends on UH
+	depends on KDP
+	default y
+	help
+	  Prevents unauthorized cred modification,
+	  namespace modification, mapping for page table.
+
+config RKP_TEST
+	bool "Enable RKP test"
+	depends on !SAMSUNG_PRODUCT_SHIP && RKP
+	default y
+	help
+	  It is a test feature for RKP debugging.
+	  This configuration checks following lists.
+	  USER_PXN
+	  USER_PGTABLE_RO
+	  KERNEL_PGTABLE_RO
+	  KERNEL_L3PGT_RO
+	  KERNEL_RANGE_RWX
+
+config KDP_TEST
+	bool "Enable KDP test"
+	depends on !SAMSUNG_PRODUCT_SHIP && KDP_CRED && KDP_NS
+	default y
+	help
+	  It is a test configuration for KDP debugging.
+	  This configuration checks following lists.
+	  TASK_CRED_RO
+	  TASK_SECURITY_CONTEXT_RO
+	  CRED_MATCH_BACKPOINTERS
+	  SEC_CONTEXT_BACKPOINTER
+endmenu
+
 
 menu "Power management options"
 
