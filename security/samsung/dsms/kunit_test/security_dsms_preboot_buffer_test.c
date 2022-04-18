@@ -127,7 +127,7 @@ static void security_dsms_create_node_success_test(struct test *test)
 		node = create_node(message);
 		EXPECT_NOT_NULL(test, node);
 		if (node != NULL) {
-			EXPECT_EQ(test, node->message, message);
+			EXPECT_PTR_EQ(test, node->message, message);
 			EXPECT_STREQ(test, node->message->feature_code, "KATC");
 			EXPECT_STREQ(test, node->message->detail, "kunit test");
 			EXPECT_EQ(test, node->message->value, 0);

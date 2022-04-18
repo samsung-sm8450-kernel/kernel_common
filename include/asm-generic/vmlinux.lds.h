@@ -789,7 +789,6 @@
 	EARLYCON_TABLE()						\
 	LSM_TABLE()							\
 	EARLY_LSM_TABLE()						\
-	KUNIT_TABLE()
 
 #define INIT_TEXT							\
 	*(.init.text .init.text.*)					\
@@ -1009,16 +1008,6 @@
 		KEEP(*(.kunit_test_suites))				\
 		__kunit_suites_end = .;
 
-#ifdef CONFIG_SEC_KUNIT
-#define KUNIT_TEST_MODULES						\
-		. = ALIGN(8);						\
-		__test_modules_start = .;				\
-		KEEP(*(.test_modules))					\
-		__test_modules_end = .;
-#else
-#define KUNIT_TEST_MODULES
-#endif
-
 #ifdef CONFIG_BLK_DEV_INITRD
 #define INIT_RAM_FS							\
 	. = ALIGN(4);							\
@@ -1220,7 +1209,7 @@
 		INIT_CALLS						\
 		CON_INITCALL						\
 		INIT_RAM_FS						\
-		KUNIT_TEST_MODULES					\
+		KUNIT_TABLE()						\
 	}
 
 #define BSS_SECTION(sbss_align, bss_align, stop_align)			\

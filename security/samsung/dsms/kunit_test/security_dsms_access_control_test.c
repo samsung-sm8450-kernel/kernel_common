@@ -53,7 +53,7 @@ static void security_dsms_compare_policy_entries_test(struct test *test)
  */
 static void security_dsms_find_policy_entry_failure_test(struct test *test)
 {
-	EXPECT_EQ(test, NULL, find_policy_entry("test"));
+	EXPECT_PTR_EQ(test, (struct dsms_policy_entry *)NULL, find_policy_entry("test"));
 }
 
 /* ------------------------------------------------------------------------- */

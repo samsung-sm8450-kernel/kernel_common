@@ -31,6 +31,12 @@
 #include <linux/fscrypt.h>
 #include <linux/fsverity.h>
 
+#ifdef CONFIG_PROC_FSLOG
+#include <linux/fslog.h>
+#else
+#define ST_LOG(fmt, ...)
+#endif
+
 /* @fs.sec -- ef5f3ea8a5ac82ae371e21c3f69ae858 -- */
 /* @fs.sec -- 57e05a5599690232e533bfcdd864042b -- */
 /* @fs.sec -- 06866fdb03315a8b0fdeb981afd76d82 -- */
@@ -4612,6 +4618,11 @@ static inline void f2fs_i_compr_blocks_update(struct inode *inode,
 		stat_sub_compr_blocks(inode, diff);
 	}
 	f2fs_mark_inode_dirty_sync(inode, true);
+
+	// P220216-05669
+	if ((int)atomic_read(&fi->i_compr_blocks) < 0)
+		ST_LOG("%s: inode(ino=%lu) has wrong i_compr_blocks. cluster_size:%u, blocks:%lu, add=%d, i_compr_blocks=%d, diff=%d", 
+			__func__, inode->i_ino, F2FS_I(inode)->i_cluster_size, blocks, (int)add, (int)atomic_read(&fi->i_compr_blocks), diff);
 }
 
 static inline int block_unaligned_IO(struct inode *inode,

@@ -29,13 +29,17 @@ static void security_dsms_test_kmalloc_mock_test(struct test *test)
 	security_dsms_test_request_kmalloc_fail_at(1);
 	security_dsms_test_request_kmalloc_fail_at(3);
 	/* kmalloc must call security_dsms_test_kmalloc_mock */
-	EXPECT_EQ(test, p = kmalloc(1, GFP_KERNEL), NULL);
+	p = kmalloc(1, GFP_KERNEL);
+	EXPECT_PTR_EQ(test, p, NULL);
 	kfree(p);
-	EXPECT_NE(test, p = kmalloc(1, GFP_KERNEL), NULL);
+	p = kmalloc(1, GFP_KERNEL);
+	EXPECT_PTR_NE(test, p, NULL);
 	kfree(p);
-	EXPECT_EQ(test, p = kmalloc(1, GFP_KERNEL), NULL);
+	p = kmalloc(1, GFP_KERNEL);
+	EXPECT_PTR_EQ(test, p, NULL);
 	kfree(p);
-	EXPECT_NE(test, p = kmalloc(1, GFP_KERNEL), NULL);
+	p = kmalloc(1, GFP_KERNEL);
+	EXPECT_PTR_NE(test, p, NULL);
 	kfree(p);
 }
 

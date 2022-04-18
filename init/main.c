@@ -119,7 +119,7 @@
 #define CREATE_TRACE_POINTS
 #include <trace/events/initcall.h>
 
-#if defined(CONFIG_SEC_KUNIT) && defined(CONFIG_UML)
+#if defined(CONFIG_KUNIT) && defined(CONFIG_UML)
 #include <kunit/test.h>
 #endif
 
@@ -1573,8 +1573,8 @@ static noinline void __init kernel_init_freeable(void)
 
 	do_basic_setup();
 
-#if defined(CONFIG_SEC_KUNIT) && defined(CONFIG_UML)
-	test_executor_init();
+#if defined(CONFIG_KUNIT) && defined(CONFIG_UML)
+	kunit_run_all_tests();
 #endif
 
 	console_on_rootfs();

@@ -1544,6 +1544,9 @@ int fscrypt_sdp_is_uninitialized(struct fscrypt_info *crypt_info)
 
 int fscrypt_sdp_use_hkdf_expanded_key(struct fscrypt_info *crypt_info)
 {
+	if (!crypt_info->ci_sdp_info)
+		return 0;
+
 	return (crypt_info->ci_sdp_info->sdp_flags & SDP_USE_HKDF_EXPANDED_KEY);
 }
 

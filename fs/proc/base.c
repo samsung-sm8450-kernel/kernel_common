@@ -3224,7 +3224,7 @@ static int proc_integrity_reset_cause(struct seq_file *m,
 				struct pid_namespace *ns,
 				struct pid *pid, struct task_struct *task)
 {
-	if (TASK_INTEGRITY(task)->reset_cause)
+	if (TASK_INTEGRITY(task)->reset_cause != CAUSE_UNSET)
 		seq_printf(m, "%s\n", tint_reset_cause_to_string(
 			TASK_INTEGRITY(task)->reset_cause));
 	else

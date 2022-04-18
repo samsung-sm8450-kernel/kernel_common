@@ -104,6 +104,8 @@ static void find_paths(struct rule_item_struct *node, char *current_path, size_t
 {
 	int attr;
 	struct file *file_ptr;
+	unsigned int is_system;
+	static const unsigned char buff_zero[SHA256_DIGEST_SIZE] = {0};
 
 	if (node->next_file) {
 		find_paths(GET_ITEM_PTR(node->next_file, packed_rules_primary), current_path, path_len);
@@ -120,6 +122,11 @@ static void find_paths(struct rule_item_struct *node, char *current_path, size_t
 	strncpy(current_path + path_len, "/", 1);
 	strncpy(current_path + path_len + 1, node->name, node->size);
 	path_len += node->size + 1;
+
+	is_system = ((strncmp("/system/", current_path, 8) == 0) ||
+			(strncmp("/product/", current_path, 9) == 0) ||
+			(strncmp("/apex/", current_path, 6) == 0) ||
+			(strncmp("/system_ext/", current_path, 12) == 0))?1:0;
 
 	if (!(node->feature_type & feature_is_file)) {
 		if (strlen(existing_directory_path_open) == 0 &&
@@ -138,7 +145,12 @@ static void find_paths(struct rule_item_struct *node, char *current_path, size_t
 	else {
 		/* feature_is_file set */
 		attr = get_first_feature(node->feature_type & feature_is_file);
-		if (attr) {
+#ifdef DEFEX_INTEGRITY_ENABLE
+		/* Skip this file due to ZERO hash */
+		if (!memcmp(buff_zero, node->integrity, SHA256_DIGEST_SIZE))
+			attr = 0;
+#endif
+		if (attr && !is_system) {
 			file_ptr = local_fopen(current_path, O_RDONLY, 0);
 			if (!IS_ERR_OR_NULL(file_ptr)) {
 				/* File with other feature */
@@ -249,8 +261,13 @@ static void lookup_tree_test(struct test *test)
 		/* T2: file with attribute other than feature_is_file */
 		EXPECT_EQ(test, 1, lookup_tree(first_file, first_file_attr, file_one));
 
+#ifdef DEFEX_INTEGRITY_ENABLE
 		/* T3: file with different contents */
 		EXPECT_EQ(test, DEFEX_INTEGRITY_FAIL, lookup_tree(first_file, first_file_attr, file_two));
+#else
+		/* T3: file with different contents */
+		EXPECT_EQ(test, 1, lookup_tree(first_file, first_file_attr, file_two));
+#endif
 
 		filp_close(file_one, 0);
 		filp_close(file_two, 0);
@@ -307,7 +324,7 @@ static void lookup_dir_test(struct test *test)
 		find_rules_for_test();
 
 	/* T1: !base || !base->next_level -> return NULL */
-	EXPECT_EQ(test, NULL, lookup_dir(NULL, NULL, 0, 0, packed_rules_primary));
+	EXPECT_PTR_EQ(test, (struct rule_item_struct *)NULL, lookup_dir(NULL, NULL, 0, 0, packed_rules_primary));
 
 	/* T2: Existing directory */
 	if (strlen(existing_directory_no_features) > 0) {
@@ -335,7 +352,7 @@ static void lookup_dir_test(struct test *test)
 	}
 
 	/* T3: Non-existing directory */
-	EXPECT_EQ(test, NULL, lookup_dir(policy_base, DUMMY_DIR, strlen(DUMMY_DIR), 0, packed_rules_primary));
+	EXPECT_PTR_EQ(test, (struct rule_item_struct *)NULL, lookup_dir(policy_base, DUMMY_DIR, strlen(DUMMY_DIR), 0, packed_rules_primary));
 
 #endif /* DEFEX_USE_PACKED_RULES && DEFEX_RAMDISK_ENABLE*/
 	SUCCEED(test);

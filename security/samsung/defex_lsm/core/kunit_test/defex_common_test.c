@@ -90,15 +90,15 @@ static void init_defex_context_test(struct test *test)
 
 	init_defex_context(&dc, __DEFEX_execve, mock_task, NULL);
 	EXPECT_EQ(test, dc.syscall_no, __DEFEX_execve);
-	EXPECT_EQ(test, dc.task, mock_task);
-	EXPECT_EQ(test, dc.process_file, NULL);
-	EXPECT_EQ(test, dc.process_dpath, NULL);
-	EXPECT_EQ(test, dc.process_name, NULL);
-	EXPECT_EQ(test, dc.target_file, NULL);
-	EXPECT_EQ(test, dc.target_dpath, NULL);
-	EXPECT_EQ(test, dc.target_name, NULL);
-	EXPECT_EQ(test, dc.process_name_buff, NULL);
-	EXPECT_EQ(test, dc.target_name_buff, NULL);
+	EXPECT_PTR_EQ(test, dc.task, mock_task);
+	EXPECT_PTR_EQ(test, dc.process_file, (struct file *)NULL);
+	EXPECT_PTR_EQ(test, dc.process_dpath, (const struct path *)NULL);
+	EXPECT_PTR_EQ(test, dc.process_name, (char *)NULL);
+	EXPECT_PTR_EQ(test, dc.target_file, (struct file *)NULL);
+	EXPECT_PTR_EQ(test, dc.target_dpath, (const struct path *)NULL);
+	EXPECT_PTR_EQ(test, dc.target_name, (char *)NULL);
+	EXPECT_PTR_EQ(test, dc.process_name_buff, (char *)NULL);
+	EXPECT_PTR_EQ(test, dc.target_name_buff, (char *)NULL);
 	EXPECT_EQ(test, dc.cred.uid.val, mock_task->cred->uid.val);
 	EXPECT_EQ(test, dc.cred.gid.val, mock_task->cred->gid.val);
 	EXPECT_EQ(test, dc.cred.suid.val, mock_task->cred->suid.val);
@@ -149,13 +149,13 @@ static void get_dc_target_dpath_test(struct test *test)
 
 	/* With target file, get_dc_target_dpath != NULL */
 	init_defex_context(&dc, __DEFEX_execve, current, test_file);
-	EXPECT_NE(test, get_dc_target_dpath(&dc), NULL);
+	EXPECT_PTR_NE(test, get_dc_target_dpath(&dc), (const struct path *)NULL);
 	release_defex_context(&dc);
 	filp_close(test_file, NULL);
 
 	/* Without target file, get_dc_target_dpath == NULL */
 	init_defex_context(&dc, __DEFEX_execve, current, NULL);
-	EXPECT_EQ(test, get_dc_target_dpath(&dc), NULL);
+	EXPECT_PTR_EQ(test, get_dc_target_dpath(&dc), (const struct path *)NULL);
 	release_defex_context(&dc);
 }
 
@@ -177,7 +177,7 @@ static void get_dc_process_file_test(struct test *test)
 	struct defex_context dc;
 
 	init_defex_context(&dc, __DEFEX_execve, current, NULL);
-	EXPECT_EQ(test, get_dc_process_file(&dc), NULL);
+	EXPECT_PTR_EQ(test, get_dc_process_file(&dc), (struct file *)NULL);
 	release_defex_context(&dc);
 }
 
@@ -187,7 +187,7 @@ static void get_dc_process_dpath_test(struct test *test)
 	struct defex_context dc;
 
 	init_defex_context(&dc, __DEFEX_execve, current, NULL);
-	EXPECT_EQ(test, get_dc_process_dpath(&dc), NULL);
+	EXPECT_PTR_EQ(test, get_dc_process_dpath(&dc), (const struct path *)NULL);
 	release_defex_context(&dc);
 
 	/* Need a situation in which get_dc_process_dpath != NULL to increase coverage */
@@ -200,7 +200,7 @@ static void defex_resolve_filename_test(struct test *test)
 	char *buff = NULL;
 
 	filename = defex_resolve_filename("/test.txt", &buff);
-	EXPECT_EQ(test, filename, NULL);
+	EXPECT_PTR_EQ(test, filename, (char *)NULL);
 
 	/* Missing case where dpath in defex_resolve_filename returns != NULL */
 }
@@ -208,7 +208,7 @@ static void defex_resolve_filename_test(struct test *test)
 
 static void defex_get_source_file_test(struct test *test)
 {
-	EXPECT_EQ(test, defex_get_source_file(current), NULL);
+	EXPECT_PTR_EQ(test, defex_get_source_file(current), (struct file *)NULL);
 	/* Not able to test a source file != NULL */
 }
 

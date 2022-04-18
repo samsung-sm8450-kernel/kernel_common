@@ -450,7 +450,7 @@ static void kill_process_test(struct test *test)
 	get_task_struct(mock_task);
 	ASSERT_FALSE(test, IS_ERR_OR_NULL(mock_task));
 	ssleep(1);
-	ASSERT_NE(test, mock_task, NULL);
+	ASSERT_PTR_NE(test, mock_task, (struct task_struct *)NULL);
 	EXPECT_EQ(test, kill_process(mock_task), 0);
 #else
 	SUCCEED(test);
@@ -472,7 +472,7 @@ static void get_parent_task_test(struct test *test)
 
 	/* No parent first */
 	mock_task->parent = NULL;
-	EXPECT_EQ(test, get_parent_task(mock_task), NULL);
+	EXPECT_PTR_EQ(test, get_parent_task(mock_task), (struct task_struct *)NULL);
 
 	/* Real parent now */
 	mock_task->parent = current;

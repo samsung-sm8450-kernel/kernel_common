@@ -242,6 +242,7 @@ source "security/samsung/defex_lsm/Kconfig"
 
 source "security/integrity/Kconfig"
 source "security/samsung/five/Kconfig"
+source "security/samsung/dsms/Kconfig"
 source "security/samsung/proca/Kconfig"
 source "security/samsung/proca/gaf/Kconfig"
 

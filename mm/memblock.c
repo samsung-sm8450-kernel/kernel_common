@@ -2317,17 +2317,9 @@ static int memblock_memsize_show(struct seq_file *m, void *private)
 		end = base + size;
 
 		seq_printf(m, "0x%09lx-0x%09lx 0x%08lx ( %7lu KB ) %s %s %s\n",
-#if defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
 			   0UL, 0UL,
-#else
-			   (unsigned long)base, (unsigned long)end,
-#endif
 			   size, DIV_ROUND_UP(size, SZ_1K),
-#if defined(CONFIG_SAMSUNG_PRODUCT_SHIP)
 			   "xxxxx",
-#else
-			   rgn->nomap ? "nomap" : "  map",
-#endif
 			   rgn->reusable ? "reusable" : "unusable",
 			   rgn->name);
 		if (rgn->reusable)

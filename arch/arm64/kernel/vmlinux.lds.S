@@ -264,8 +264,8 @@ SECTIONS
 	_sdata = .;
 	RW_DATA(L1_CACHE_BYTES, PAGE_SIZE, THREAD_ALIGN)
 
-	.test_modules : {
-		KUNIT_TEST_MODULES
+	.kunit_test_suites : {
+		KUNIT_TABLE()
 	}
 
 	/*
