@@ -1355,6 +1355,11 @@ static int read_node_page(struct page *page, int op_flags)
 
 	if (unlikely(ni.blk_addr == NULL_ADDR) ||
 			is_sbi_flag_set(sbi, SBI_IS_SHUTDOWN)) {
+		if (ni.blk_addr == NULL_ADDR)
+			f2fs_warn(sbi, "node block address is NULL, nid: %lu, ino: %lu, blk_addr: %lu, version: %u, flag: 0x%x",
+					(unsigned long) ni.nid, (unsigned long) ni.ino,
+					(unsigned long) ni.blk_addr, (unsigned int) ni.version,
+					(unsigned int) ni.flag);
 		ClearPageUptodate(page);
 		return -ENOENT;
 	}
